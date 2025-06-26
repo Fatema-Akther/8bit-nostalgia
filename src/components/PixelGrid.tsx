@@ -13,7 +13,6 @@ const PixelGrid = () => {
   const [savedNames, setSavedNames] = useState<string[]>([]);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  // Initial load
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -111,8 +110,30 @@ const PixelGrid = () => {
           <div
             key={index}
             onClick={() => handlePixelClick(index)}
-            className="w-8 h-8 border cursor-pointer"
-            style={{ backgroundColor: color || "white" }}
+            className="w-8 h-8 border cursor-pointer transition-all duration-150"
+            style={{
+              backgroundColor: color || "white",
+              ...(color === ""
+                ? {
+                    backgroundImage: `linear-gradient(${selectedColor}, ${selectedColor})`,
+                    backgroundSize: "0% 0%",
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "center",
+                  }
+                : {}),
+            }}
+            onMouseEnter={(e) => {
+              if (pixels[index] === "") {
+                e.currentTarget.style.backgroundSize = "100% 100%";
+                e.currentTarget.style.boxShadow = `0 0 4px 2px ${selectedColor}80`;
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (pixels[index] === "") {
+                e.currentTarget.style.backgroundSize = "0% 0%";
+                e.currentTarget.style.boxShadow = "none";
+              }
+            }}
           ></div>
         ))}
       </div>
