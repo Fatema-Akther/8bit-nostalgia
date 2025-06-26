@@ -4,16 +4,18 @@ const PixelGrid = () => {
   const gridSize = 8;
   const totalPixels = gridSize * gridSize;
 
-  const [pixels, setPixels] = useState<boolean[]>(Array(totalPixels).fill(false));
+  // State: holds color values per pixel ("" means white)
+  const [pixels, setPixels] = useState<string[]>(Array(totalPixels).fill(""));
+  const [selectedColor, setSelectedColor] = useState<string>("#000000");
 
-  const togglePixel = (index: number) => {
+  const handlePixelClick = (index: number) => {
     const updated = [...pixels];
-    updated[index] = !updated[index];
+    updated[index] = updated[index] === selectedColor ? "" : selectedColor;
     setPixels(updated);
   };
 
   const handleClear = () => {
-    setPixels(Array(totalPixels).fill(false));
+    setPixels(Array(totalPixels).fill(""));
   };
 
   const handleMirror = () => {
@@ -21,8 +23,7 @@ const PixelGrid = () => {
     for (let row = 0; row < gridSize; row++) {
       const start = row * gridSize;
       const end = start + gridSize;
-      const rowPixels = newPixels.slice(start, end);
-      rowPixels.reverse();
+      const rowPixels = newPixels.slice(start, end).reverse();
       for (let i = 0; i < gridSize; i++) {
         newPixels[start + i] = rowPixels[i];
       }
@@ -31,15 +32,24 @@ const PixelGrid = () => {
   };
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-6">
+      <div className="flex items-center gap-3">
+        <label className="text-white font-medium">🎨 Pick Color:</label>
+        <input
+          type="color"
+          value={selectedColor}
+          onChange={(e) => setSelectedColor(e.target.value)}
+          className="w-10 h-10 rounded"
+        />
+      </div>
+
       <div className="grid grid-cols-8 gap-1">
-        {pixels.map((active, index) => (
+        {pixels.map((color, index) => (
           <div
             key={index}
-            onClick={() => togglePixel(index)}
-            className={`w-8 h-8 cursor-pointer border ${
-              active ? "bg-black" : "bg-white"
-            }`}
+            onClick={() => handlePixelClick(index)}
+            className="w-8 h-8 border cursor-pointer"
+            style={{ backgroundColor: color || "white" }}
           ></div>
         ))}
       </div>
