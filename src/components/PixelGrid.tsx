@@ -5,13 +5,14 @@ const defaultGridSize = 8;
 
 const PixelGrid = () => {
   const STORAGE_KEY = "pixel-art-saves";
-
   const [gridSize, setGridSize] = useState(defaultGridSize);
   const [pixels, setPixels] = useState<string[]>(Array(defaultGridSize * defaultGridSize).fill(""));
   const [selectedColor, setSelectedColor] = useState<string>("#000000");
   const [designName, setDesignName] = useState<string>("");
   const [savedNames, setSavedNames] = useState<string[]>([]);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+  const [undoStack, setUndoStack] = useState<string[][]>([]);
+  const [redoStack, setRedoStack] = useState<string[][]>([]);
   const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -25,6 +26,27 @@ const PixelGrid = () => {
   useEffect(() => {
     setPixels(Array(gridSize * gridSize).fill(""));
   }, [gridSize]);
+
+  const pushToUndoStack = () => {
+    setUndoStack((prev) => [...prev, [...pixels]]);
+    setRedoStack([]);
+  };
+
+  const handleUndo = () => {
+    if (undoStack.length === 0) return;
+    const lastState = undoStack[undoStack.length - 1];
+    setUndoStack((prev) => prev.slice(0, -1));
+    setRedoStack((prev) => [...prev, [...pixels]]);
+    setPixels(lastState);
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length === 0) return;
+    const nextState = redoStack[redoStack.length - 1];
+    setRedoStack((prev) => prev.slice(0, -1));
+    setUndoStack((prev) => [...prev, [...pixels]]);
+    setPixels(nextState);
+  };
 
   const handleSave = () => {
     if (!designName.trim()) return;
@@ -63,10 +85,12 @@ const PixelGrid = () => {
   };
 
   const handleClear = () => {
+    pushToUndoStack();
     setPixels(Array(gridSize * gridSize).fill(""));
   };
 
   const handleMirror = () => {
+    pushToUndoStack();
     const newPixels = [...pixels];
     for (let row = 0; row < gridSize; row++) {
       const start = row * gridSize;
@@ -91,6 +115,7 @@ const PixelGrid = () => {
   };
 
   const handlePixelClick = (index: number) => {
+    pushToUndoStack();
     const updated = [...pixels];
     updated[index] = updated[index] === selectedColor ? "" : selectedColor;
     setPixels(updated);
@@ -113,6 +138,7 @@ const PixelGrid = () => {
 
   return (
     <div className="flex flex-col items-center gap-6 px-4 py-8 max-w-screen-sm mx-auto">
+      {/* Grid size selector */}
       <div className="flex flex-col sm:flex-row items-center gap-2">
         <label className="text-white font-medium">🧩 Grid Size:</label>
         <select
@@ -127,6 +153,7 @@ const PixelGrid = () => {
         <small className="text-xs text-gray-300">(Changing size clears current art)</small>
       </div>
 
+      {/* Color Picker */}
       <div className="flex items-center gap-3">
         <label className="text-white font-medium">🎨 Pick Color:</label>
         <input
@@ -138,6 +165,7 @@ const PixelGrid = () => {
         />
       </div>
 
+      {/* Grid */}
       <div
         ref={gridRef}
         className="grid gap-[2px] sm:gap-1 p-1 sm:p-2 bg-white shadow-md"
@@ -184,6 +212,7 @@ const PixelGrid = () => {
         ))}
       </div>
 
+      {/* Save/Load UI */}
       <div className="flex flex-col items-center gap-2">
         <input
           type="text"
@@ -227,6 +256,7 @@ const PixelGrid = () => {
         )}
       </div>
 
+      {/* Main Action Buttons */}
       <div className="flex flex-wrap justify-center gap-4">
         <button
           onClick={handleMirror}
@@ -248,6 +278,20 @@ const PixelGrid = () => {
           aria-label="Export image"
         >
           Export 📸
+        </button>
+        <button
+          onClick={handleUndo}
+          className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded"
+          aria-label="Undo"
+        >
+          Undo ↩️
+        </button>
+        <button
+          onClick={handleRedo}
+          className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded"
+          aria-label="Redo"
+        >
+          Redo ↪️
         </button>
       </div>
     </div>
