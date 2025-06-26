@@ -13,7 +13,7 @@ const PixelGrid = () => {
   const [savedNames, setSavedNames] = useState<string[]>([]);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  // Load saved names on first render
+  // Initial load
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -22,24 +22,40 @@ const PixelGrid = () => {
     }
   }, []);
 
-  // Save current design with name
   const handleSave = () => {
-    if (!designName.trim()) return alert("Please enter a name!");
+    if (!designName.trim()) return;
+    const confirmed = confirm(`Overwrite design "${designName}" if it already exists?`);
+    if (!confirmed) return;
+
     const saved = localStorage.getItem(STORAGE_KEY);
     const allDesigns = saved ? JSON.parse(saved) : {};
     allDesigns[designName] = pixels;
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(allDesigns));
     setSavedNames(Object.keys(allDesigns));
     alert(`Saved "${designName}" successfully!`);
     setDesignName("");
   };
 
-  // Load design by name
   const handleLoad = (name: string) => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (!saved) return;
     const allDesigns = JSON.parse(saved);
     setPixels(allDesigns[name]);
+  };
+
+  const handleDelete = (name: string) => {
+    const confirmed = confirm(`Are you sure you want to delete "${name}"?`);
+    if (!confirmed) return;
+
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return;
+    const allDesigns = JSON.parse(saved);
+    delete allDesigns[name];
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(allDesigns));
+    setSavedNames(Object.keys(allDesigns));
+    alert(`Deleted "${name}"`);
   };
 
   const handleClear = () => {
@@ -89,7 +105,7 @@ const PixelGrid = () => {
         />
       </div>
 
-      {/* Grid Canvas */}
+      {/* Grid */}
       <div ref={gridRef} className="grid grid-cols-8 gap-1 p-2 bg-white">
         {pixels.map((color, index) => (
           <div
@@ -101,18 +117,19 @@ const PixelGrid = () => {
         ))}
       </div>
 
-      {/* Save/Load Controls */}
+      {/* Save/Load UI */}
       <div className="flex flex-col items-center gap-2">
         <input
           type="text"
-          placeholder="Enter design name"
+          placeholder="e.g., smiley"
           value={designName}
           onChange={(e) => setDesignName(e.target.value)}
-          className="px-3 py-2 rounded border"
+          className="px-3 py-2 rounded border text-black"
         />
         <button
           onClick={handleSave}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+          className={`px-4 py-2 rounded text-white ${designName.trim() ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"}`}
+          disabled={!designName.trim()}
         >
           Save As 💾
         </button>
@@ -128,9 +145,23 @@ const PixelGrid = () => {
             </option>
           ))}
         </select>
+
+        {savedNames.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {savedNames.map((name) => (
+              <button
+                key={name}
+                onClick={() => handleDelete(name)}
+                className="bg-red-500 hover:bg-red-700 text-white text-sm px-2 py-1 rounded"
+              >
+                Delete {name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Action Buttons */}
+      {/* Main Action Buttons */}
       <div className="flex flex-wrap justify-center gap-4">
         <button
           onClick={handleMirror}
