@@ -40,3 +40,6 @@
 .read-the-docs {
   color: #888;
 }
+body {
+  cursor: url('/assets/cursor-pixel.png') 0 0, auto;
+}

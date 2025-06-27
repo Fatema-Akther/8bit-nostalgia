@@ -3,6 +3,8 @@ import html2canvas from "html2canvas";
 
 const defaultGridSize = 8;
 
+const clickSound = new Audio("/assets/click.wav.mp3");
+
 const PixelGrid = () => {
   const STORAGE_KEY = "pixel-art-saves";
   const [gridSize, setGridSize] = useState(defaultGridSize);
@@ -115,6 +117,7 @@ const PixelGrid = () => {
   };
 
   const handlePixelClick = (index: number) => {
+    clickSound.play();
     pushToUndoStack();
     const updated = [...pixels];
     updated[index] = updated[index] === selectedColor ? "" : selectedColor;
@@ -137,162 +140,94 @@ const PixelGrid = () => {
   };
 
   return (
-    <div className="flex flex-col items-center gap-6 px-4 py-8 max-w-screen-sm mx-auto">
-      {/* Grid size selector */}
-      <div className="flex flex-col sm:flex-row items-center gap-2">
-        <label className="text-white font-medium">🧩 Grid Size:</label>
+    <div className="font-retro text-retro text-white bg-black min-h-screen w-full p-4 flex flex-col items-center crt-frame">
+      <h1 className="font-retro text-xl text-retroAccent text-retro-glow mb-4 pb-2 border-b-2 border-retroBorder">
+        🎮 8-bit Pixel Art Maker
+      </h1>
+      <div className="flex gap-2 mb-4">
         <select
           value={gridSize}
           onChange={(e) => setGridSize(parseInt(e.target.value))}
-          className="px-2 py-1 rounded text-sm text-black"
+          className="bg-pink-700 px-2 py-1 rounded text-sm"
         >
-          <option value={8}>8 × 8</option>
-          <option value={16}>16 × 16</option>
-          <option value={32}>32 × 32</option>
+          <option value={8}>8x8</option>
+          <option value={16}>16x16</option>
+          <option value={32}>32x32</option>
         </select>
-        <small className="text-xs text-gray-300">(Changing size clears current art)</small>
-      </div>
-
-      {/* Color Picker */}
-      <div className="flex items-center gap-3">
-        <label className="text-white font-medium">🎨 Pick Color:</label>
         <input
           type="color"
           value={selectedColor}
           onChange={(e) => setSelectedColor(e.target.value)}
-          className="w-10 h-10 rounded"
-          aria-label="Pick drawing color"
+          className="w-10 h-10 border border-white"
         />
       </div>
 
-      {/* Grid */}
       <div
         ref={gridRef}
-        className="grid gap-[2px] sm:gap-1 p-1 sm:p-2 bg-white shadow-md"
+        className="grid gap-[2px] p-2 bg-gray-800 pixelated"
         style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        aria-label="Pixel drawing canvas"
       >
         {pixels.map((color, index) => (
           <div
             key={index}
             role="button"
-            aria-label={`Pixel ${index + 1}`}
             tabIndex={0}
             onClick={() => handlePixelClick(index)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") handlePixelClick(index);
-            }}
-            className={`w-6 h-6 sm:w-8 sm:h-8 border border-gray-300 cursor-pointer transition-all duration-150 ease-in-out outline-none ${focusedIndex === index ? "ring-2 ring-blue-400" : ""}`}
-            style={{
-              backgroundColor: color || "white",
-              ...(color === ""
-                ? {
-                    backgroundImage: `linear-gradient(${selectedColor}, ${selectedColor})`,
-                    backgroundSize: "0% 0%",
-                    backgroundRepeat: "no-repeat",
-                    backgroundPosition: "center",
-                  }
-                : {}),
-            }}
-            onMouseEnter={(e) => {
-              if (pixels[index] === "") {
-                e.currentTarget.style.backgroundSize = "100% 100%";
-                e.currentTarget.style.boxShadow = `0 0 4px 2px ${selectedColor}80`;
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (pixels[index] === "") {
-                e.currentTarget.style.backgroundSize = "0% 0%";
-                e.currentTarget.style.boxShadow = "none";
-              }
-            }}
+            className={`w-6 h-6 border border-gray-400 cursor-pointer ${
+              focusedIndex === index ? "ring-2 ring-yellow-300" : ""
+            }`}
+            style={{ backgroundColor: color || "#111" }}
           ></div>
         ))}
       </div>
 
-      {/* Save/Load UI */}
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex gap-2 mt-4">
+        <button onClick={handleMirror} className="bg-purple-800 hover:bg-purple-600 px-3 py-1 rounded">
+          ↔ Mirror
+        </button>
+        <button onClick={handleClear} className="bg-red-700 hover:bg-red-500 px-3 py-1 rounded">
+          🧹 Clear
+        </button>
+        <button onClick={handleExport} className="bg-blue-700 hover:bg-blue-500 px-3 py-1 rounded">
+          📷 Export
+        </button>
+      </div>
+
+      <div className="mt-6 w-full max-w-sm">
         <input
           type="text"
-          placeholder="e.g., smiley"
+          placeholder="Design name..."
           value={designName}
           onChange={(e) => setDesignName(e.target.value)}
-          className="w-48 sm:w-64 px-3 py-2 rounded border text-sm text-black"
-          aria-label="Design name input"
+          className="w-full px-3 py-1 rounded text-black"
         />
         <button
           onClick={handleSave}
-          className={`px-4 py-2 rounded text-white ${designName.trim() ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"}`}
-          disabled={!designName.trim()}
-          aria-label="Save design"
+          className="bg-green-700 hover:bg-green-500 text-white w-full mt-2 py-1 rounded"
         >
-          Save As 💾
+          💾 Save
         </button>
-        <select
-          onChange={(e) => handleLoad(e.target.value)}
-          className="w-48 sm:w-64 px-3 py-2 rounded text-sm text-black"
-          aria-label="Load saved design"
-        >
-          <option value="">📂 Load Design</option>
+        <select onChange={(e) => handleLoad(e.target.value)} className="w-full mt-2 px-2 py-1 text-black">
+          <option value="">📁 Load</option>
           {savedNames.map((name) => (
-            <option key={name} value={name}>{name}</option>
+            <option key={name} value={name}>
+              {name}
+            </option>
           ))}
         </select>
-        {savedNames.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {savedNames.map((name) => (
-              <button
-                key={name}
-                onClick={() => handleDelete(name)}
-                className="bg-red-500 hover:bg-red-700 text-white text-sm px-2 py-1 rounded"
-                aria-label={`Delete ${name}`}
-              >
-                Delete {name}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Main Action Buttons */}
-      <div className="flex flex-wrap justify-center gap-4">
-        <button
-          onClick={handleMirror}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded"
-          aria-label="Mirror design"
-        >
-          Mirror ↔️
-        </button>
-        <button
-          onClick={handleClear}
-          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
-          aria-label="Clear canvas"
-        >
-          Clear ❌
-        </button>
-        <button
-          onClick={handleExport}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-          aria-label="Export image"
-        >
-          Export 📸
-        </button>
-        <button
-          onClick={handleUndo}
-          className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded"
-          aria-label="Undo"
-        >
-          Undo ↩️
-        </button>
-        <button
-          onClick={handleRedo}
-          className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded"
-          aria-label="Redo"
-        >
-          Redo ↪️
-        </button>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {savedNames.map((name) => (
+            <button
+              key={name}
+              onClick={() => handleDelete(name)}
+              className="bg-red-600 hover:bg-red-400 text-xs px-2 py-1 rounded"
+            >
+              🗑️ {name}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
